@@ -1,32 +1,55 @@
 <template>
-  <div class="container">
-    <header class="header">Games List <span>found:4</span> </header>
-    <main>
-      <ul class="games-list">
-        <!-- Elementlar bu yerda joylashtiriladi -->
-      </ul>
-    </main>
+  <div class="container list-page">
+    <ListHeader :count="filteredItems.length" />
+    <ItemList
+      :items="filteredItems"
+      @reorder="handleReorder"
+    />
+    <ListPagination
+      :total="listStore.totalItems"
+      :current-page="currentPage"
+      :per-page="perPage"
+      @page-change="setPage"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, computed, onMounted } from 'vue';
+import { useListStore } from '~/stores/list';
+import { useHistoryStore } from '~/stores/history';
+
+const listStore = useListStore();
+const historyStore = useHistoryStore();
+
+const currentPage = ref(1);
+const perPage = ref(10);
+
+const filteredItems = computed(() => {
+  const start = (currentPage.value - 1) * perPage.value;
+  const end = start + perPage.value;
+  return listStore.rootItems.slice(start, end);
+});
+
+const setPage = (page: number) => {
+  currentPage.value = page;
+};
+
+const handleReorder = (payload: any) => {
+  historyStore.addToHistory();
+  listStore.reorderItems(payload);
+};
+
+onMounted(async () => {
+  listStore.loadItems();
+  historyStore.initHistory();
+});
 </script>
 
 <style scoped>
-.container {
-  margin: 0 auto;
-  padding: 20px;
-}
-.games-list {
-  list-style: none;
-  padding: 0;
-}
-.header{
-  font-family: ;
-  font-size: 28px;
-  line-height: 36px;
-  vertical-align: middle;
-
-
+.list-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
 }
 </style>
