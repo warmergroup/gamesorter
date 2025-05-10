@@ -47,8 +47,8 @@ addToHistory();
 // Save current state to history
 function addToHistory() {
 // Get current state
-const currentState: HistoryState = {
-items: listStore.getCurrentState()
+    const currentState: HistoryState = {
+    items: listStore.getCurrentState()
 };
 
 // If we're not at the end of history, truncate forward history
@@ -76,7 +76,13 @@ function undo() {
 if (!canUndo.value) return;
 
 currentIndex.value--;
-listStore.restoreFromState(history.value[currentIndex.value].items);
+if (currentIndex.value < 0) currentIndex.value = 0;
+
+// Himoya: history.value[currentIndex.value] mavjudligini tekshirish
+const state = history.value[currentIndex.value];
+if (state && state.items) {
+listStore.restoreFromState(state.items);
+}
 saveToLocalStorage();
 }
 

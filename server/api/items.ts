@@ -1,4 +1,4 @@
-import type { Item } from '~/types/item';
+import type {Item} from '~/types/item';
 
 export default defineEventHandler(async (event) => {
   // Simulate delay for realistic API behavior
@@ -51,12 +51,6 @@ export default defineEventHandler(async (event) => {
           order: 5,
           children: []
         },
-        {
-          id: '2.6',
-          name: 'SMGs',
-          order: 6,
-          children: []
-        }
       ]
     },
     {
@@ -75,47 +69,29 @@ export default defineEventHandler(async (event) => {
       childCount: 0,
       children: [
         {
-          id: '2.1',
-          name: 'Gloves',
+          id: '4.1',
+          name: 'Heavy',
           order: 1,
           children: []
         },
         {
-          id: '2.2',
-          name: 'Heavy',
+          id: '4.2',
+          name: 'Knives',
           order: 2,
           children: []
         },
         {
-          id: '2.3',
-          name: 'Knives',
+          id: '4.3',
+          name: 'Pistols',
           order: 3,
           children: []
         },
-        {
-          id: '2.4',
-          name: 'Pistols',
-          order: 4,
-          children: []
-        },
-        {
-          id: '2.5',
-          name: 'Rifles',
-          order: 5,
-          children: []
-        },
-        {
-          id: '2.6',
-          name: 'SMGs',
-          order: 6,
-          children: []
-        }
       ]
     }
   ];
 
   // Generate additional mock items for pagination
-  for (let i = 5; i <= 100; i++) {
+  for (let i = 5; i <= 70; i++) {
     items.push({
       id: i.toString(),
       name: `Game ${i}`,

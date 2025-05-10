@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
-import type { Item, ReorderPayload } from '~/types/item';
+import {defineStore} from 'pinia';
+import {computed, ref} from 'vue';
+import type {Item, ReorderPayload} from '~/types/item';
 
 export const useListStore = defineStore('list', () => {
   const items = ref<Item[]>([]);
@@ -232,7 +232,7 @@ export const useListStore = defineStore('list', () => {
 
   // Reorder items based on the drag and drop action
   function reorderItems(payload: ReorderPayload) {
-    const { itemId, targetId, position } = payload;
+    const {itemId, targetId, position} = payload;
 
     if (itemId === targetId) return; // Can't move onto itself
 
@@ -244,7 +244,7 @@ export const useListStore = defineStore('list', () => {
     if (!itemToMove) return;
 
     // Clone the item to avoid reference issues
-    const itemClone = { ...itemToMove };
+    const itemClone = {...itemToMove};
 
     // Remove the item from its current position
     removeItemFromCurrentPosition(itemId);
@@ -375,6 +375,24 @@ export const useListStore = defineStore('list', () => {
     items.value = JSON.parse(JSON.stringify(state));
   }
 
+  // Update item by id
+  function updateItem(updatedItem: Item) {
+    function updateRecursive(itemsArr: Item[]) {
+      for (let i = 0; i < itemsArr.length; i++) {
+        if (itemsArr[i].id === updatedItem.id) {
+          itemsArr[i] = {...itemsArr[i], ...updatedItem};
+          return true;
+        }
+        if (itemsArr[i].children && updateRecursive(itemsArr[i].children ?? [])) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    updateRecursive(items.value);
+  }
+
   return {
     items,
     rootItems,
@@ -385,6 +403,8 @@ export const useListStore = defineStore('list', () => {
     getParentId,
     isChildOf,
     getCurrentState,
-    restoreFromState
+    restoreFromState,
+    updateItem,
+    removeItemFromCurrentPosition
   };
 });

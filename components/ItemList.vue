@@ -1,39 +1,7 @@
-<template>
-  <div
-    ref="listContainer"
-    class="item-list"
-    @mousemove="handleMouseMove"
-    @mouseup="handleMouseUp"
-    @mouseleave="handleMouseUp"
-  >
-    <div v-if="items.length === 0" class="item-list__empty">
-      No items found.
-    </div>
-    <template v-else>
-      <ListItem
-        v-for="item in items"
-        :key="item.id"
-        :item="item"
-        :level="0"
-        @mouse-down="handleMouseDown"
-      />
-    </template>
-    <div
-      v-if="isDragging"
-      class="item-list__drag-ghost"
-      :style="ghostStyle"
-    >
-      <div class="item-list__drag-ghost-inner">
-        {{ draggingItem?.name }}
-      </div>
-    </div>
-  </div>
-</template>
-
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import type { Item } from '~/types/item';
-import { useListStore } from '~~/stores/list';
+import { useListStore } from '~/stores/list';
 
 const props = defineProps<{
   items: Item[];
@@ -41,6 +9,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   reorder: [payload: any];
+  edit: [payload: any];
+  remove: [payload: any];
 }>();
 
 const listStore = useListStore();
@@ -54,6 +24,10 @@ const draggingParentId = ref<string | null>(null);
 const mousePosition = reactive({ x: 0, y: 0 });
 const dragStartPosition = reactive({ x: 0, y: 0 });
 const dragOffset = reactive({ x: 0, y: 0 });
+const dragOverItemId = ref<string | null>(null);
+
+// Popup Menu state
+const openMenuItemId = ref<string | null>(null);
 
 // Computed styles for drag ghost element
 const ghostStyle = computed(() => {
@@ -61,6 +35,7 @@ const ghostStyle = computed(() => {
     left: `${mousePosition.x - dragOffset.x}px`,
     top: `${mousePosition.y - dragOffset.y}px`,
     width: `${listContainer.value?.offsetWidth || 0}px`,
+    boxShadow: `0 4px 12px rgba(0, 0, 0, 0.3)`,
   };
 });
 
@@ -105,7 +80,9 @@ const handleMouseMove = (event: MouseEvent) => {
 
   // Highlight drop target if valid
   if (targetElement) {
-    // Implement highlight logic here
+    dragOverItemId.value = targetElement.dataset.itemId || null;
+  } else {
+    dragOverItemId.value = null;
   }
 };
 
@@ -139,6 +116,7 @@ const handleMouseUp = (event: MouseEvent) => {
   draggingItem.value = null;
   draggingLevel.value = 0;
   draggingParentId.value = null;
+  dragOverItemId.value = null;
 };
 
 // Helper functions
@@ -198,6 +176,25 @@ const isValidDrop = (targetId: string, position: string): boolean => {
   return true;
 };
 </script>
+
+<template>
+  <div ref="listContainer" class="item-list" @mousemove="handleMouseMove" @mouseup="handleMouseUp"
+    @mouseleave="handleMouseUp">
+    <div v-if="items.length === 0" class="item-list__empty">
+      No items found.
+    </div>
+    <template v-else>
+      <ListItem v-for="item in items" :key="item.id" :item="item" :level="0" :openMenuItemId="openMenuItemId"
+        @open-menu="openMenuItemId = $event" @close-menu="openMenuItemId = null" @mouse-down="handleMouseDown"
+        :dragOverItemId="dragOverItemId" @edit="$emit('edit', $event)" @remove="$emit('remove', $event)" />
+    </template>
+    <div v-if="isDragging" class="item-list__drag-ghost" :style="ghostStyle">
+      <div class="item-list__drag-ghost-inner">
+        {{ draggingItem?.name }}
+      </div>
+    </div>
+  </div>
+</template>
 
 <style scoped>
 .item-list {

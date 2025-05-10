@@ -1,16 +1,9 @@
 <template>
   <div class="container list-page">
     <ListHeader :count="filteredItems.length" />
-    <ItemList
-      :items="filteredItems"
-      @reorder="handleReorder"
-    />
-    <ListPagination
-      :total="listStore.totalItems"
-      :current-page="currentPage"
-      :per-page="perPage"
-      @page-change="setPage"
-    />
+    <ItemList :items="filteredItems" @reorder="handleReorder" @edit="handleEdit" @remove="handleRemove" />
+    <ListPagination :total="listStore.totalItems" :current-page="currentPage" :per-page="perPage"
+      @page-change="setPage" />
   </div>
 </template>
 
@@ -39,6 +32,16 @@ const handleReorder = (payload: any) => {
   historyStore.addToHistory();
   listStore.reorderItems(payload);
 };
+
+function handleEdit(updatedItem: any) {
+  historyStore.addToHistory();
+  listStore.updateItem(updatedItem);
+}
+
+function handleRemove(item: any) {
+  historyStore.addToHistory();
+  listStore.removeItemFromCurrentPosition(item.id);
+}
 
 onMounted(async () => {
   listStore.loadItems();

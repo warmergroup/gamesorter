@@ -9,7 +9,8 @@
         :disabled="currentPage === 1"
         @click="changePage(currentPage - 1)"
       >
-        <IconsIconChevronLeft />
+        <Icon name="material-symbols:chevron-left"/>
+
       </button>
 
       <div class="pagination__pages">
@@ -51,14 +52,14 @@
         :disabled="currentPage === pageCount"
         @click="changePage(currentPage + 1)"
       >
-        <IconsIconChevronRight />
+        <Icon name="material-symbols:chevron-right"/>
       </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import {computed} from 'vue';
 
 const props = defineProps<{
   total: number;

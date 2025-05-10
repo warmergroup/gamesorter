@@ -1,16 +1,15 @@
 <template>
   <div class="layout">
     <main class="main">
-      <slot />
+      <slot/>
     </main>
-
   </div>
 </template>
 
 <script setup lang="ts">
-import { useHistoryStore } from '~/stores/history';
-
-const historyStore = useHistoryStore();
+// import { useHistoryStore } from '~/stores/history';
+//
+// const historyStore = useHistoryStore();
 </script>
 
 <style scoped>

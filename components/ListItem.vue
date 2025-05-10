@@ -5,16 +5,22 @@ import type { Item } from '~/types/item';
 const props = defineProps<{
   item: Item;
   level: number;
+  dragOverItemId?: string | null;
+  openMenuItemId: string | null;
 }>();
 
 const emit = defineEmits<{
   'mouse-down': [event: MouseEvent, item: Item, level: number];
   'edit': [item: Item];
   'remove': [item: Item];
+  'open-menu': [itemId: string];
+  'close-menu': [];
 }>();
 
 const isExpanded = ref(true);
-const isMenuOpen = ref(false);
+const isMenuOpen = computed(() => props.openMenuItemId === props.item.id);
+const isEditModalOpen = ref(false);
+const isDeleteModalOpen = ref(false);
 
 const hasChildren = computed(() => {
   return props.item.children && props.item.children.length > 0;
@@ -25,7 +31,21 @@ const toggleExpanded = () => {
 };
 
 const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
+  if (isMenuOpen.value) {
+    emit('close-menu');
+  } else {
+    emit('open-menu', props.item.id);
+  }
+};
+
+const openEditModal = () => {
+  isEditModalOpen.value = true;
+  emit('close-menu');
+};
+
+const openDeleteModal = () => {
+  isDeleteModalOpen.value = true;
+  emit('close-menu');
 };
 
 const handleMouseDown = (event: MouseEvent) => {
@@ -45,7 +65,7 @@ const handleDocumentClick = (event: MouseEvent) => {
   if (isMenuOpen.value) {
     const target = event.target as HTMLElement;
     if (!target.closest('.list-item__menu')) {
-      isMenuOpen.value = false;
+      emit('close-menu');
     }
   }
 };
@@ -58,89 +78,94 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleDocumentClick);
 });
+
+function onEdit(updatedItem) {
+  emit('edit', updatedItem);
+  isEditModalOpen.value = false;
+}
+
+function openMenu() {
+  emit('open-menu', props.item.id);
+}
+
+function closeMenu() {
+  emit('close-menu');
+}
 </script>
 
 <template>
-  <div
-    :class="{
-      'list-item': true,
-      'list-item--folder': hasChildren,
-      'list-item--expanded': isExpanded,
-      ['list-item--level-' + level]: true
-    }"
-    :data-item-id="item.id"
-  >
-    <div
-      class="list-item__content"
-      :style="{ paddingLeft: `${24 + level * 20}px` }"
-      @mousedown="handleMouseDown"
-    >
-      <div class="list-item__drag-handle">
-       <Icon name="material-symbols:drag-indicator"/>
-      </div>
+  <div :class="{
+    'list-item': true,
+    'list-item--folder': hasChildren,
+    'list-item--expanded': isExpanded,
+    ['list-item--level-' + level]: true,
+    'list-item--drag-over': dragOverItemId === item.id
+  }" :data-item-id="item.id">
+    <div class="list-item__content" :style="{ paddingLeft: `${24 + level * 20}px` }">
+      <!-- Chap tomondagi elementlar -->
+      <div class="list-item__left">
 
-      <button
-        v-if="hasChildren"
-        class="list-item__toggle"
-        @click.stop="toggleExpanded"
-      >
-        <Icon name="material-symbols:chevron-right" :class="{ 'icon-rotated': isExpanded }" />
-      </button>
+        <div class="list-item__drag-handle" @mousedown="handleMouseDown">
+          <Icon name="material-symbols:drag-indicator" />
+        </div>
 
-      <div class="list-item__icon">
-        <Icon v-if="hasChildren" name="material-symbols:folder"  />
-        <Icon v-else name="material-symbols:file-copy" />
-      </div>
+        <button v-if="hasChildren" class="list-item__toggle" @click.stop="toggleExpanded">
+          <Icon name="material-symbols:chevron-right" :class="{ 'icon-rotated': isExpanded }" />
+        </button>
 
-      <div>
+        <div class="list-item__icon">
+          <Icon v-if="hasChildren" name="material-symbols:folder" />
+          <Icon v-else name="material-symbols:file-copy" />
+        </div>
+
+        <div class="list-item__name">{{ item.name }}</div>
+
+        <div class="list-item__order">{{ item.order }}</div>
+        <div v-if="item.categories" class="list-item__categories">
+          {{ item.categories }}
+        </div>
 
       </div>
-      <div class="list-item__name">{{ item.name }}</div>
-      <div class="list-item__order">{{ item.order }}</div>
 
-      <div v-if="item.categories" class="list-item__categories">
-        {{ item.categories }}
-      </div>
+      <!-- O'rtadagi elementlar -->
 
-      <div class="list-item__actions">
+
+      <!-- O'ng tomondagi elementlar -->
+      <div class="list-item__right">
         <span v-if="item.childCount" class="list-item__count">
           {{ item.childCount }}
         </span>
-        <button
-          class="list-item__menu-btn"
-          @click.stop="toggleMenu"
-        >
+        <button class="list-item__menu-btn" @click.stop="toggleMenu">
           <Icon name="material-symbols:more-horiz" />
         </button>
 
         <div v-if="isMenuOpen" class="list-item__menu">
-          <button class="list-item__menu-item" @click.stop="$emit('edit', item)">
+          <button class="list-item__menu-item" @click="openEditModal">Edit
             <Icon name="material-symbols:edit" />
-            Edit
           </button>
-          <button class="list-item__menu-item" @click.stop="$emit('remove', item)">
+          <button class="list-item__menu-item" @click="openDeleteModal">Delete
             <Icon name="material-symbols:delete" />
-            Remove
           </button>
         </div>
       </div>
     </div>
 
+    <!-- Recursive Children -->
     <div v-if="isExpanded && hasChildren" class="list-item__children">
-      <ListItem
-        v-for="child in item.children"
-        :key="child.id"
-        :item="child"
-        :level="level + 1"
-        @mouse-down="$emit('mouse-down', $event, child, level + 1)"
-        @edit="$emit('edit', $event)"
-        @remove="$emit('remove', $event)"
-      />
+      <ListItem v-for="child in item.children" :key="child.id" :item="child" :level="level + 1"
+        :openMenuItemId="openMenuItemId" :dragOverItemId="dragOverItemId" @open-menu="emit('open-menu', $event)"
+        @close-menu="emit('close-menu')" @mouse-down="$emit('mouse-down', $event, child, level + 1)"
+        @edit="$emit('edit', $event)" @remove="$emit('remove', $event)"
+        :class="{ 'list-item--drag-over': dragOverItemId === child.id }" />
     </div>
+
+    <!-- Modals -->
+    <ItemActionsModal v-if="isEditModalOpen" :item="item" action="edit" @close="isEditModalOpen = false"
+      @edit="onEdit" />
+    <ItemActionsModal v-if="isDeleteModalOpen" :item="item" action="remove" @close="isDeleteModalOpen = false"
+      @remove="emit('remove', $event)" />
   </div>
 </template>
-
-
 
 <style scoped>
 .list-item {
@@ -151,14 +176,28 @@ onBeforeUnmount(() => {
 .list-item__content {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   padding: var(--spacing-3) var(--spacing-4);
   min-height: 50px;
   position: relative;
-  transition: background-color var(--transition);
+  transition: all var(--transition);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.list-item:last-child > .list-item__content {
+.list-item__left {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+}
+
+.list-item__right {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+}
+
+
+.list-item:last-child>.list-item__content {
   border-bottom: none;
 }
 
@@ -265,19 +304,24 @@ onBeforeUnmount(() => {
 
 .list-item__menu {
   position: absolute;
-  top: 100%;
+  display: flex;
+  justify-content: start;
+  align-items: start;
+  flex-direction: column;
+  padding: var(--spacing-2);
+  gap: var(--spacing-2);
   right: 0;
-  background-color: var(--background-light);
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  top: 100%;
+  background: var(--background-light);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   z-index: 10;
-  min-width: 150px;
-  overflow: hidden;
 }
 
 .list-item__menu-item {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: var(--spacing-2);
   width: 100%;
   padding: var(--spacing-3) var(--spacing-4);
@@ -308,5 +352,11 @@ onBeforeUnmount(() => {
 
 .list-item--level-3 .list-item__content {
   background-color: rgba(255, 255, 255, 0.04);
+}
+
+.list-item--drag-over .list-item__content {
+  border: 2px dashed var(--primary);
+  background-color: rgba(var(--primary-rgb), 0.1);
+  transition: all var(--transition);
 }
 </style>
